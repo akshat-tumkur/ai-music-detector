@@ -1,0 +1,26 @@
+# Audio processing
+librosa==0.10.2.post1
+soundfile==0.12.1
+audioread==3.0.1
+
+# Numerical and tabular processing
+numpy==1.26.4
+scipy==1.13.1
+pandas==2.2.3
+
+# Machine learning
+scikit-learn==1.5.2
+xgboost==2.1.2
+joblib==1.4.2
+
+# Visualization and dashboard
+streamlit==1.39.0
+matplotlib==3.9.2
+seaborn==0.13.2
+plotly==5.24.1
+
+# Utilities
+tqdm==4.66.5
+
+# Testing
+pytest==8.3.3
