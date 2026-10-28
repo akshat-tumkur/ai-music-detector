@@ -24,6 +24,10 @@ python -m src.acquire_dataset --human 220
 The Jamendo API client ID is intentionally supplied through an environment
 variable and is never written to the repository.
 
+The current local corpus contains 220 AI-generated and 220 human tracks. Three
+unavailable Jamendo URLs were replaced from a later API page so the manifest
+contains exactly 440 downloadable files.
+
 ## Download locally
 
 ```powershell
