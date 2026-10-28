@@ -1,1 +1,8 @@
 .venv/
+__pycache__/
+*.py[cod]
+data/raw/**/*.mp3
+data/raw/**/*.wav
+data/raw/**/*.flac
+data/processed/*.csv
+data/processed/*.json
