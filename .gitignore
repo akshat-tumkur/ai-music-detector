@@ -1,4 +1,5 @@
 .venv/
+PROJECT_PROGRESS.md
 __pycache__/
 *.py[cod]
 data/raw/**/*.mp3
