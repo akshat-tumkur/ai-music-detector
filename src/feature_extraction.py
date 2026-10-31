@@ -46,20 +46,31 @@ def extract_features(
     y, sr = librosa.load(path, sr=sample_rate, mono=True, duration=duration)
     if y.size == 0:
         raise ValueError(f"Audio file contains no samples: {path}")
+    return extract_features_from_samples(y, sr)
+
+
+def extract_features_from_samples(
+    y: np.ndarray,
+    sample_rate: int = DEFAULT_SAMPLE_RATE,
+) -> dict[str, float]:
+    """Extract the standard feature vector from an in-memory mono waveform."""
+    y = np.asarray(y, dtype=np.float32)
+    if y.size == 0:
+        raise ValueError("Audio samples contain no data.")
 
     features: dict[str, float] = {}
     features.update(_statistics(librosa.feature.mfcc(
-        y=y, sr=sr, n_mfcc=N_MFCC, n_fft=N_FFT, hop_length=HOP_LENGTH, n_mels=N_MELS
+        y=y, sr=sample_rate, n_mfcc=N_MFCC, n_fft=N_FFT, hop_length=HOP_LENGTH, n_mels=N_MELS
     ), "mfcc"))
     features.update(_statistics(librosa.feature.chroma_stft(
-        y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH, n_chroma=N_CHROMA
+        y=y, sr=sample_rate, n_fft=N_FFT, hop_length=HOP_LENGTH, n_chroma=N_CHROMA
     ), "chroma"))
 
     spectral_features = (
-        ("spectral_centroid", librosa.feature.spectral_centroid(y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH)),
-        ("spectral_bandwidth", librosa.feature.spectral_bandwidth(y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH)),
-        ("spectral_contrast", librosa.feature.spectral_contrast(y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH)),
-        ("spectral_rolloff", librosa.feature.spectral_rolloff(y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH)),
+        ("spectral_centroid", librosa.feature.spectral_centroid(y=y, sr=sample_rate, n_fft=N_FFT, hop_length=HOP_LENGTH)),
+        ("spectral_bandwidth", librosa.feature.spectral_bandwidth(y=y, sr=sample_rate, n_fft=N_FFT, hop_length=HOP_LENGTH)),
+        ("spectral_contrast", librosa.feature.spectral_contrast(y=y, sr=sample_rate, n_fft=N_FFT, hop_length=HOP_LENGTH)),
+        ("spectral_rolloff", librosa.feature.spectral_rolloff(y=y, sr=sample_rate, n_fft=N_FFT, hop_length=HOP_LENGTH)),
         ("zero_crossing_rate", librosa.feature.zero_crossing_rate(y, hop_length=HOP_LENGTH)),
         ("rms", librosa.feature.rms(y=y, frame_length=N_FFT, hop_length=HOP_LENGTH)),
         ("spectral_flatness", librosa.feature.spectral_flatness(y=y, n_fft=N_FFT, hop_length=HOP_LENGTH)),
@@ -67,9 +78,9 @@ def extract_features(
     for name, values in spectral_features:
         features.update(_statistics(values, name))
 
-    features["tempo"] = float(librosa.feature.tempo(y=y, sr=sr, hop_length=HOP_LENGTH)[0])
-    features["duration_seconds"] = float(librosa.get_duration(y=y, sr=sr))
-    features["sample_rate"] = float(sr)
+    features["tempo"] = float(librosa.feature.tempo(y=y, sr=sample_rate, hop_length=HOP_LENGTH)[0])
+    features["duration_seconds"] = float(librosa.get_duration(y=y, sr=sample_rate))
+    features["sample_rate"] = float(sample_rate)
     features["rms_energy"] = float(np.mean(y**2))
     if not all(np.isfinite(value) for value in features.values()):
         raise ValueError(f"Feature extraction produced non-finite values: {path}")

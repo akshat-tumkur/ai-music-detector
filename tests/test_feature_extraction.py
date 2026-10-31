@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-from src.feature_extraction import extract_features, feature_names
+from src.feature_extraction import extract_features, extract_features_from_samples, feature_names
 
 
 def test_extractor_returns_more_than_100_finite_features(tmp_path: Path) -> None:
@@ -36,3 +36,12 @@ def test_extractor_rejects_missing_audio(tmp_path: Path) -> None:
         assert str(missing) in str(exc)
     else:
         raise AssertionError("Missing audio should raise FileNotFoundError")
+
+
+def test_array_extractor_matches_standard_schema() -> None:
+    samples = np.zeros(22_050, dtype=np.float32)
+
+    features = extract_features_from_samples(samples)
+
+    assert list(features) == feature_names()
+    assert len(features) == 184
