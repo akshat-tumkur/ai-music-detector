@@ -25,9 +25,14 @@ python -m pip install notebook
    - Compare human and AI-generated feature distributions.
    - View summary differences and correlations.
 3. `03_model_training_and_evaluation.ipynb`
-   - Load the saved ensemble and metrics.
-   - Inspect probabilities and predictions in a DataFrame.
-   - View a confusion matrix and ROC curve.
+   - Train the complete ensemble step by step.
+   - Experiment with hyperparameters and compare models.
+   - View metrics, errors, a confusion matrix, and ROC curve.
+4. `04_sliding_window_inference.ipynb`
+   - Load the saved ensemble and a local audio file.
+   - Run five-second windows with 2.5-second overlap.
+   - Inspect aggregate confidence and per-window probabilities.
+   - Visualize the waveform and window predictions.
 
 The notebooks read generated files from `data/processed/` and the saved model
 from `models/`; run dataset acquisition, feature extraction, and model
