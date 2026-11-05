@@ -10,8 +10,8 @@ from src.inference import predict_audio
 
 class AlwaysAiModel:
     def predict_proba(self, values: np.ndarray) -> np.ndarray:
-        assert values.shape == (1, 184)
-        return np.array([[0.1, 0.9]])
+        assert values.shape[1] == 184
+        return np.tile(np.array([[0.1, 0.9]]), (values.shape[0], 1))
 
 
 def _create_model(path: Path) -> None:

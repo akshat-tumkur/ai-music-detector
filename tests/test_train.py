@@ -30,3 +30,20 @@ def test_training_saves_model_and_metrics(tmp_path: Path) -> None:
     assert 0.0 <= metrics["test_accuracy"] <= 1.0
     assert 0.0 <= metrics["test_roc_auc"] <= 1.0
     assert json.loads(metrics_path.read_text())["test_samples"] == 8
+
+
+def test_window_training_splits_tracks_not_windows(tmp_path: Path) -> None:
+    rng = np.random.default_rng(42)
+    table = pd.DataFrame(rng.normal(size=(20, 4)), columns=["a", "b", "c", "d"])
+    table.insert(0, "window_start_seconds", [0.0, 2.5] * 10)
+    table.insert(0, "label", ["human"] * 10 + ["ai_generated"] * 10)
+    table.insert(0, "track_id", [f"track_{i // 2}" for i in range(20)])
+    features_path = tmp_path / "window_features.csv"
+    model_path = tmp_path / "model.joblib"
+    metrics_path = tmp_path / "metrics.json"
+    table.to_csv(features_path, index=False)
+
+    metrics = train_and_evaluate(features_path, model_path, metrics_path)
+
+    assert metrics["window_training"] is True
+    assert metrics["train_tracks"] + metrics["test_tracks"] == 10

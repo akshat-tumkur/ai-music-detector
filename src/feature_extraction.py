@@ -52,6 +52,8 @@ def extract_features(
 def extract_features_from_samples(
     y: np.ndarray,
     sample_rate: int = DEFAULT_SAMPLE_RATE,
+    *,
+    fast_tempo: bool = False,
 ) -> dict[str, float]:
     """Extract the standard feature vector from an in-memory mono waveform."""
     y = np.asarray(y, dtype=np.float32)
@@ -78,12 +80,24 @@ def extract_features_from_samples(
     for name, values in spectral_features:
         features.update(_statistics(values, name))
 
-    features["tempo"] = float(librosa.feature.tempo(y=y, sr=sample_rate, hop_length=HOP_LENGTH)[0])
+    if fast_tempo:
+        onset = librosa.onset.onset_strength(y=y, sr=sample_rate, hop_length=HOP_LENGTH)
+        autocorrelation = librosa.autocorrelate(onset)
+        minimum_lag = max(1, round(sample_rate * 60 / 300 / HOP_LENGTH))
+        maximum_lag = min(len(autocorrelation) - 1, round(sample_rate * 60 / 40 / HOP_LENGTH))
+        if maximum_lag > minimum_lag:
+            lag = minimum_lag + int(np.argmax(autocorrelation[minimum_lag:maximum_lag]))
+            tempo = 60 * sample_rate / (lag * HOP_LENGTH)
+        else:
+            tempo = 0.0
+    else:
+        tempo = librosa.feature.tempo(y=y, sr=sample_rate, hop_length=HOP_LENGTH)[0]
+    features["tempo"] = float(tempo)
     features["duration_seconds"] = float(librosa.get_duration(y=y, sr=sample_rate))
     features["sample_rate"] = float(sample_rate)
     features["rms_energy"] = float(np.mean(y**2))
     if not all(np.isfinite(value) for value in features.values()):
-        raise ValueError(f"Feature extraction produced non-finite values: {path}")
+        raise ValueError("Feature extraction produced non-finite values.")
     return features
 
 

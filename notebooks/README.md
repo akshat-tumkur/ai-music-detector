@@ -25,15 +25,18 @@ python -m pip install notebook
    - Compare human and AI-generated feature distributions.
    - View summary differences and correlations.
 3. `03_model_training_and_evaluation.ipynb`
-   - Train the complete ensemble step by step.
-   - Experiment with hyperparameters and compare models.
+   - Experiment with the original track-level training workflow.
    - View metrics, errors, a confusion matrix, and ROC curve.
 4. `04_sliding_window_inference.ipynb`
    - Load the saved ensemble and a local audio file.
    - Run five-second windows with 2.5-second overlap.
    - Inspect aggregate confidence and per-window probabilities.
    - Visualize the waveform and window predictions.
+5. `05_window_model_training.ipynb`
+   - Inspect the five-second training table.
+   - Split by track so windows from one track never leak across train/test.
+   - Train and evaluate the production window-level ensemble.
 
 The notebooks read generated files from `data/processed/` and the saved model
-from `models/`; run dataset acquisition, feature extraction, and model
+from `models/`; run dataset acquisition, window feature extraction, and model
 training first if those files do not exist.

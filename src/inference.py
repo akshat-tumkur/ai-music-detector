@@ -52,20 +52,23 @@ def predict_audio(
 
     window_size = round(window_seconds * sample_rate)
     hop_size = round(hop_seconds * sample_rate)
-    probabilities: list[float] = []
-    details: list[dict[str, float]] = []
+    feature_vectors: list[list[float]] = []
+    window_starts: list[int] = []
     for start in _window_starts(len(y), window_size, hop_size):
         window = y[start:start + window_size]
         if len(window) < window_size:
             window = np.pad(window, (0, window_size - len(window)))
-        features = extract_features_from_samples(window, sample_rate)
-        vector = np.array([[features[name] for name in feature_columns]], dtype=np.float64)
-        probability = float(model.predict_proba(vector)[0, 1])
-        probabilities.append(probability)
+        features = extract_features_from_samples(window, sample_rate, fast_tempo=True)
+        feature_vectors.append([features[name] for name in feature_columns])
+        window_starts.append(start)
+
+    probabilities = model.predict_proba(np.asarray(feature_vectors, dtype=np.float64))[:, 1]
+    details: list[dict[str, float]] = []
+    for start, probability in zip(window_starts, probabilities):
         details.append({
             "start_seconds": start / sample_rate,
             "end_seconds": min((start + window_size) / sample_rate, len(y) / sample_rate),
-            "ai_probability": probability,
+            "ai_probability": float(probability),
         })
 
     aggregate_probability = float(np.mean(probabilities))
@@ -78,5 +81,6 @@ def predict_audio(
         "ai_probability": aggregate_probability,
         "human_probability": 1.0 - aggregate_probability,
         "predicted_label": "ai_generated" if aggregate_probability >= 0.5 else "human",
+        "confidence": max(aggregate_probability, 1.0 - aggregate_probability),
         "windows": details,
     }

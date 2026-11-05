@@ -13,6 +13,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -83,10 +84,16 @@ def train_and_evaluate(
     table = pd.read_csv(features_path)
     if "label" not in table or "track_id" not in table:
         raise ValueError("Feature table must contain track_id and label columns.")
-    if table["label"].isna().any() or table["track_id"].duplicated().any():
+    window_training = "window_start_seconds" in table.columns
+    if table["label"].isna().any() or (
+        table["track_id"].duplicated().any() and not window_training
+    ):
         raise ValueError("Feature table contains missing labels or duplicate tracks.")
 
-    feature_columns = [column for column in table.columns if column not in {"track_id", "label"}]
+    feature_columns = [
+        column for column in table.columns
+        if column not in {"track_id", "label", "window_start_seconds"}
+    ]
     X = table[feature_columns].to_numpy(dtype=np.float64)
     y = (table["label"] == "ai_generated").astype(np.int8).to_numpy()
     if set(np.unique(y)) != {0, 1}:
@@ -94,13 +101,16 @@ def train_and_evaluate(
     if not np.isfinite(X).all():
         raise ValueError("Feature table contains non-finite values.")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,
-        random_state=RANDOM_STATE,
-        stratify=y,
-    )
+    groups = table["track_id"].to_numpy()
+    if table["track_id"].duplicated().any() and "window_start_seconds" in table:
+        splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=RANDOM_STATE)
+        train_indices, test_indices = next(splitter.split(X, y, groups))
+    else:
+        train_indices, test_indices = train_test_split(
+            np.arange(len(y)), test_size=0.2, random_state=RANDOM_STATE, stratify=y
+        )
+    X_train, X_test = X[train_indices], X[test_indices]
+    y_train, y_test = y[train_indices], y[test_indices]
     model = build_ensemble(X.shape[1])
     model.fit(X_train, y_train)
     probabilities = model.predict_proba(X_test)[:, 1]
@@ -109,6 +119,9 @@ def train_and_evaluate(
         "random_state": RANDOM_STATE,
         "train_samples": int(len(y_train)),
         "test_samples": int(len(y_test)),
+        "train_tracks": int(table.iloc[train_indices]["track_id"].nunique()),
+        "test_tracks": int(table.iloc[test_indices]["track_id"].nunique()),
+        "window_training": window_training,
         "feature_count": len(feature_columns),
         "test_accuracy": float(accuracy_score(y_test, predictions)),
         "test_roc_auc": float(roc_auc_score(y_test, probabilities)),

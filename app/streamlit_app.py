@@ -90,6 +90,11 @@ def _show_prediction(filename: str, result: dict[str, object]) -> None:
     first.metric("Prediction", label)
     second.metric("AI probability", f"{ai_probability:.1%}")
     third.metric("Windows analyzed", int(result["window_count"]))
+    if float(result["confidence"]) < 0.65:
+        st.warning(
+            "This is a low-confidence result. Validate it with additional tracks "
+            "from the same music generator before relying on the label."
+        )
 
     windows = _window_table(result)
     chart = px.line(
